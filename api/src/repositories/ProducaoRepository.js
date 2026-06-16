@@ -7,12 +7,37 @@ const obterPeloId = async(id) => {
   return result.rows[0];
 }
 
-const obterTodos = async() => {
-  const query = 'SELECT * FROM producoes ORDER BY id ASC';
-  const result = await poolPgSQL.query(query);
 
-  return result.rows;
-}
+const obterProducoesPaginada = async (page, limit, turno) => {
+  const offset = (page - 1) * limit;
+  const values = [];
+  let queryText = 'SELECT * FROM producoes';
+  let countQueryText = 'SELECT COUNT(*) FROM producoes';
+
+  if (turno) {
+    queryText += ' WHERE turno = $1';
+    countQueryText += ' WHERE turno = $1';
+    values.push(turno);
+  }
+
+  const limitPlaceholder = values.length + 1;
+  const offsetPlaceholder = values.length + 2;
+  
+  queryText += ` ORDER BY id ASC LIMIT $${limitPlaceholder} OFFSET $${offsetPlaceholder}`;
+  
+  const finalValues = [...values, limit, offset];
+
+  const dataResult = await poolPgSQL.query(queryText, finalValues);
+  const countResult = await poolPgSQL.query(countQueryText, values);
+  
+  const totalRegistros = parseInt(countResult.rows[0].count);
+
+  return {
+    dados: dataResult.rows,
+    totalRegistros,
+    totalPaginas: Math.ceil(totalRegistros / limit)
+  };
+};
 
 const gravarProducao = async (dadosProducao) => {
   const { data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas } = dadosProducao;
@@ -56,7 +81,7 @@ const removerProducao = async (id) => {
 
 module.exports={
   obterPeloId,
-  obterTodos,
+  obterProducoesPaginada,
   gravarProducao,
   atualizarProducao,
   removerProducao

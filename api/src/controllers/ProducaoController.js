@@ -19,14 +19,30 @@ const obterProducaoPeloId = async (req, res) => {
 
 const obterTodasProducoes = async (req, res) => {
   try {
-    const listaProducao=await producaoRepository.obterTodos();
-    
-    return res.status(200).json(listaProducao);
+    // Pega as query strings da URL (ex: ?page=1&limit=10&turno=1)
+    let { page, limit, turno } = req.query;
+
+    // Sanitiza e define valores padrão para não quebrar o cálculo matemático
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    turno = turno ? parseInt(turno) : null;
+
+    const resultado = await producaoRepository.obterProducoesPaginada(page, limit, turno);
+
+    return res.status(200).json({
+      meta: {
+        pagina_atual: page,
+        limite_por_pagina: limit,
+        total_registros: resultado.totalRegistros,
+        total_paginas: resultado.totalPaginas
+      },
+      data: resultado.dados
+    });
   } catch (error) {
-    console.error("Erro no SELECT:", error);
-    return res.status(500).json({ message: "Erro ao buscar produções", error: error.message });
+    console.error("Erro na paginação:", error);
+    return res.status(500).json({ message: "Erro ao listar produções.", error: error.message });
   }
-}
+};
 
 const gravarProducao = async (req, res) => {
   try {
