@@ -218,15 +218,16 @@ O script `stop.js` verifica se há containers rodando e derruba tudo limpo. Se n
 
 ```bash
 docker compose logs -f
-``` (`api/.env`)
+```
+(`api/.env`)
 
 ```env
-DB_HOST=postgres
+DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=producao
-PORT=3000
+PORT=3001
 ```
 
 ---
@@ -235,11 +236,11 @@ PORT=3000
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/producoes?page=1&limit=10&turno=1` | Listagem paginada |
-| GET | `/producoes/:id` | Busca por ID |
-| POST | `/producoes` | Cria registro |
-| PUT | `/producoes/:id` | Atualiza registro |
-| DELETE | `/producoes/:id` | Remove registro |
+| GET | `/api/producoes?page=1&limit=10&turno=1` | Listagem paginada |
+| GET | `/api/producoes/:id` | Busca por ID |
+| POST | `/api/producoes` | Cria registro |
+| PUT | `/api/producoes/:id` | Atualiza registro |
+| DELETE | `/api/producoes/:id` | Remove registro |
 
 ### GET /producoes
 **Resposta 200:**
