@@ -6,5 +6,7 @@ const producaoControler = require('../controllers/ProducaoController');
 router.get('/producoes/:id', producaoControler.obterProducaoPeloId);
 router.get('/producoes', producaoControler.obterTodasProducoes);
 router.post('/producoes', producaoControler.gravarProducao);
+router.put('/producoes/:id', producaoControler.atualizarProducao);
+router.delete('/producoes/:id', producaoControler.deletarProducao);
 
 module.exports = router;

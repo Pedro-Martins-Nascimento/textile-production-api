@@ -31,8 +31,33 @@ const gravarProducao = async (dadosProducao) => {
   return result.rows[0]; 
 };
 
+const atualizarProducao = async (id, dadosAtualizados) => {
+  const { data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas } = dadosAtualizados;
+
+  const query = `
+    UPDATE producoes 
+    SET data_producao = $1, numero_tear = $2, codigo_produto = $3, turno = $4, qualidade = $5, quilos = $6, pecas = $7
+    WHERE id = $8
+    RETURNING *;
+  `;
+
+  const values = [data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas, id];
+
+  const result = await poolPgSQL.query(query, values);
+  return result.rows[0];
+};
+
+const removerProducao = async (id) => {
+  const query = 'DELETE FROM producoes WHERE id = $1 RETURNING id;';
+  const result = await poolPgSQL.query(query, [id]);
+  
+  return result.rowCount > 0;
+};
+
 module.exports={
   obterPeloId,
   obterTodos,
-  gravarProducao
+  gravarProducao,
+  atualizarProducao,
+  removerProducao
 };

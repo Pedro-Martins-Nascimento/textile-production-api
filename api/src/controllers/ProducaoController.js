@@ -37,7 +37,7 @@ const gravarProducao = async (req, res) => {
       return res.status(400).json({ message: "Todos os campos da produção são obrigatórios." });
     }
 
-    const novaProducao = await producaoRepository.create({
+    const novaProducao = await producaoRepository.gravarProducao({
       data_producao,
       numero_tear,
       codigo_produto,
@@ -55,8 +55,51 @@ const gravarProducao = async (req, res) => {
   }
 };
 
+const atualizarProducao = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas } = req.body;
+
+    if (!data_producao || !numero_tear || !codigo_produto || !turno || !qualidade || !quilos || !pecas) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios para atualização total." });
+    }
+
+    const producaoAtualizada = await producaoRepository.atualizarProducao(id, {
+      data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas
+    });
+
+    if (!producaoAtualizada) {
+      return res.status(404).json({ message: "Produção não encontrada para atualização." });
+    }
+
+    return res.status(200).json(producaoAtualizada);
+  } catch (error) {
+    console.error("Erro ao atualizar produção:", error);
+    return res.status(500).json({ message: "Erro interno ao atualizar", error: error.message });
+  }
+};
+
+const deletarProducao = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletadoComSucesso = await producaoRepository.removerProducao(id);
+
+    if (!deletadoComSucesso) {
+      return res.status(404).json({ message: "Produção não encontrada para exclusão." });
+    }
+
+    return res.status(200).json({ message: `Registro com ID ${id} removido com sucesso.` });
+  } catch (error) {
+    console.error("Erro ao deletar produção:", error);
+    return res.status(500).json({ message: "Erro interno ao deletar", error: error.message });
+  }
+};
+
 module.exports = {
   obterProducaoPeloId,
   obterTodasProducoes,
-  gravarProducao
+  gravarProducao,
+  atualizarProducao,
+  deletarProducao
 };
