@@ -7,5 +7,8 @@
     "stop": "node stop.js",
     "test": "node test.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
 }

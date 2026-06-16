@@ -1,18 +1,13 @@
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
 
-app.use(express.json())
+const producaoRoute = require('./routes/ProducaoRoute');
 
-// Rota temporária só para validar que o container sobe
-app.get('/producoes', (req, res) => {
-  res.json({ data: [], page: 1, limit: 10, total: 0 })
-})
+app.use(express.json());
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' })
-})
+app.use('/api',producaoRoute);
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`API rodando na porta ${PORT}`)
+  console.log(`API rodando na porta ${PORT}`);
 })
