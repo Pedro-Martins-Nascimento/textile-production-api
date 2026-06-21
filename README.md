@@ -13,8 +13,8 @@ API RESTful com testes automatizados para gestão de registros de produção de 
 | **Júlia** | Front-end — `index.html`, `style.css`, `app.js` |
 | **Miguel** | Testes de front-end — Playwright |
 | **Felipe** | API — rotas, controllers, services, repository |
-| **Klaus** | Testes unitários (Jest) + testes de integração (Supertest) |
-| **Lucas** | Testes de carga e estresse — Grafana K6 |
+| **Klaus** | Testes de carga e estresse — Grafana K6 |
+| **Lucas** | Testes unitários (Jest) + testes de integração (Supertest) |
 | **Mirella** | Documentação — `swagger.yaml` + Swagger UI + teste de contrato (dredd) |
 | **Pedro** | Infraestrutura — `docker-compose.yml`, `Dockerfile`, script SQL, `start.js`, `test.js` |
 
@@ -36,8 +36,8 @@ Etapa 3 — Júlia + Mirella (em paralelo)
   └── Mirella: documenta os endpoints no swagger.yaml + configura Swagger UI
         ↓
 Etapa 4 — Klaus + Lucas + Miguel + Mirella (em paralelo)
-  ├── Klaus: testes unitários Jest + testes de integração Supertest
-  ├── Lucas: scripts de carga e estresse K6
+  ├── Klaus: scripts de carga e estresse K6 
+  ├── Lucas: testes unitários Jest + testes de integração Supertest
   ├── Miguel: testes Playwright do front-end
   └── Mirella: teste de contrato com dredd
         ↓
