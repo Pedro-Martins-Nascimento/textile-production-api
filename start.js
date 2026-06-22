@@ -148,7 +148,7 @@ async function main() {
   // 9. Aguarda API responder
   // ─────────────────────────────────────
   log('Aguardando API iniciar...')
-  const apiOk = await waitForUrl('http://localhost:3000/producoes', 'API')
+  const apiOk = await waitForUrl('http://localhost:3000/api/producoes', 'API')
   if (apiOk) {
     ok('API está respondendo.')
   } else {

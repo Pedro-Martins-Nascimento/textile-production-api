@@ -13,10 +13,10 @@ API RESTful com testes automatizados para gestão de registros de produção de 
 | **Júlia** | Front-end — `index.html`, `style.css`, `app.js` |
 | **Miguel** | Testes de front-end — Playwright |
 | **Felipe** | API — rotas, controllers, services, repository |
-| **Klaus** | Testes de carga e estresse — Grafana K6 |
 | **Lucas** | Testes unitários (Jest) + testes de integração (Supertest) |
+| **Klaus** | Testes de carga e estresse — Grafana K6 |
 | **Mirella** | Documentação — `swagger.yaml` + Swagger UI + teste de contrato (dredd) |
-| **Pedro** | Infraestrutura — `docker-compose.yml`, `Dockerfile`, script SQL, `start.js`, `test.js` |
+| **Pedro** | Infraestrutura — `docker-compose.yml`, `Dockerfile`, script SQL, `start.js`, `stop.js`, `test.js` |
 
 ---
 
@@ -35,9 +35,9 @@ Etapa 3 — Júlia + Mirella (em paralelo)
   ├── Júlia: constrói o front-end conectado à API
   └── Mirella: documenta os endpoints no swagger.yaml + configura Swagger UI
         ↓
-Etapa 4 — Klaus + Lucas + Miguel + Mirella (em paralelo)
-  ├── Klaus: scripts de carga e estresse K6 
+Etapa 4 — Lucas + Klaus + Miguel + Mirella (em paralelo)
   ├── Lucas: testes unitários Jest + testes de integração Supertest
+  ├── Klaus: scripts de carga e estresse K6
   ├── Miguel: testes Playwright do front-end
   └── Mirella: teste de contrato com dredd
         ↓
@@ -89,7 +89,6 @@ projeto-producao/
 ├── docker-compose.yml
 ├── package.json        ← scripts npm
 ├── start.js            ← script de inicialização
-├── stop.js             ← script que derruba tudo
 └── test.js             ← script que roda todos os testes
 ```
 
@@ -106,7 +105,7 @@ projeto-producao/
 | `numero_tear` | VARCHAR | Identificador do tear (ex: "T-042") |
 | `codigo_produto` | VARCHAR | Código do produto (ex: "MAL-001") |
 | `turno` | INTEGER | Turno de trabalho: 1, 2 ou 3 |
-| `qualidade` | VARCHAR | Classificação: "A", "B" ou "C" |
+| `qualidade` | INTEGER | Classificação: 1, 2 ou 3 (1=Alta, 2=Média, 3=Baixa) |
 | `quilos` | DECIMAL | Volume produzido em kg |
 | `pecas` | INTEGER | Quantidade de peças produzidas |
 | `created_at` | TIMESTAMP | Data de inserção do registro |
@@ -116,13 +115,13 @@ projeto-producao/
 ```sql
 CREATE TABLE producoes (
   id SERIAL PRIMARY KEY,
-  data_producao DATE NOT NULL,
+  data_producao TIMESTAMP NOT NULL,
   numero_tear VARCHAR(20) NOT NULL,
   codigo_produto VARCHAR(30) NOT NULL,
   turno INTEGER NOT NULL CHECK (turno IN (1, 2, 3)),
-  qualidade VARCHAR(1) NOT NULL CHECK (qualidade IN ('A', 'B', 'C')),
-  quilos DECIMAL(10, 2) NOT NULL,
-  pecas INTEGER NOT NULL,
+  qualidade INTEGER NOT NULL CHECK (qualidade IN (1, 2, 3)),
+  quilos DECIMAL(10, 2) NOT NULL CHECK (quilos > 0),
+  pecas INTEGER NOT NULL CHECK (pecas > 0),
   created_at TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -209,25 +208,24 @@ Se algum teste falhar, aparece em vermelho com o motivo:
 ### Derrubar
 
 ```bash
-npm run stop
+docker compose down
 ```
-
-O script `stop.js` verifica se há containers rodando e derruba tudo limpo. Se não houver nada rodando, avisa sem dar erro.
 
 ### Ver logs
 
 ```bash
 docker compose logs -f
 ```
-(`api/.env`)
+
+### Variáveis de ambiente (`api/.env`)
 
 ```env
-DB_HOST=localhost
+DB_HOST=postgres
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=producao
-PORT=3001
+PORT=3000
 ```
 
 ---
@@ -242,7 +240,7 @@ PORT=3001
 | PUT | `/api/producoes/:id` | Atualiza registro |
 | DELETE | `/api/producoes/:id` | Remove registro |
 
-### GET /producoes
+### GET /api/producoes
 **Resposta 200:**
 ```json
 {
@@ -253,7 +251,7 @@ PORT=3001
       "numero_tear": "T-042",
       "codigo_produto": "MAL-001",
       "turno": 1,
-      "qualidade": "A",
+      "qualidade": 1,
       "quilos": 8.5,
       "pecas": 270,
       "created_at": "2026-04-20T10:00:00.000Z"
@@ -265,14 +263,14 @@ PORT=3001
 }
 ```
 
-### GET /producoes/:id
+### GET /api/producoes/:id
 **Resposta 200:** registro encontrado.
 **Resposta 404:**
 ```json
 { "error": "Registro não encontrado" }
 ```
 
-### POST /producoes
+### POST /api/producoes
 **Body:**
 ```json
 {
@@ -280,7 +278,7 @@ PORT=3001
   "numero_tear": "T-042",
   "codigo_produto": "MAL-001",
   "turno": 1,
-  "qualidade": "A",
+  "qualidade": 1,
   "quilos": 8.5,
   "pecas": 270
 }
@@ -291,12 +289,12 @@ PORT=3001
 { "error": "Campo 'quilos' é obrigatório" }
 ```
 
-### PUT /producoes/:id
+### PUT /api/producoes/:id
 **Body:** mesmos campos do POST.
 **Resposta 200:** registro atualizado.
 **Resposta 404:** registro não encontrado.
 
-### DELETE /producoes/:id
+### DELETE /api/producoes/:id
 **Resposta 200:**
 ```json
 { "message": "Registro removido com sucesso" }
@@ -325,7 +323,7 @@ npm install -g dredd
 
 **Como rodar:**
 ```bash
-dredd api/swagger.yaml http://localhost:3000
+dredd api/swagger.yaml http://localhost:3000/api
 ```
 
 **O que valida:**
@@ -357,7 +355,7 @@ Interface acessível em `http://localhost:8080`.
 
 ---
 
-## 🧪 Testes Unitários e de Integração — Klaus
+## 🧪 Testes Unitários e de Integração — Lucas
 
 ### Testes Unitários — `api/tests/unit/producao.service.test.js`
 
@@ -404,16 +402,16 @@ Testa os endpoints reais contra o banco PostgreSQL rodando. Valida o fluxo compl
 
 ---
 
-## 📊 Testes de Carga e Estresse — Lucas
+## 📊 Testes de Carga e Estresse — Klaus
 
 **Instalação do K6:** https://k6.io/docs/get-started/installation/
 
 **Fluxo testado por VU (ambos os scripts):**
-1. `GET /producoes?page=1&limit=10`
-2. `GET /producoes/1`
-3. `POST /producoes` com dados fictícios de produção
-4. `PUT /producoes/{id}` no registro criado
-5. `DELETE /producoes/{id}` no registro criado
+1. `GET /api/producoes?page=1&limit=10`
+2. `GET /api/producoes/1`
+3. `POST /api/producoes` com dados fictícios de produção
+4. `PUT /api/producoes/{id}` no registro criado
+5. `DELETE /api/producoes/{id}` no registro criado
 
 **Métricas a apresentar:**
 - `http_req_duration` — tempo de resposta (p95)
@@ -518,23 +516,23 @@ npx playwright test
 ## ✅ Checklist de Entrega
 
 ### Pedro
-- [ ] `docker-compose.yml` com os 3 containers
-- [ ] `Dockerfile` da API
-- [ ] `init.sql` com criação da tabela
-- [ ] `package.json` na raiz com scripts `start`, `stop` e `test`
-- [ ] `start.js` com verificações de Docker e subida dos containers
-- [ ] `stop.js` que derruba todos os containers limpo
-- [ ] `test.js` que roda todos os testes em sequência com resumo comparativo no terminal
-- [ ] `npm run start` sobe tudo sem erro
-- [ ] `npm run stop` derruba tudo sem erro
-- [ ] `npm run test` executa todos os testes e exibe resultado final
+- [x] `docker-compose.yml` com os 3 containers
+- [x] `Dockerfile` da API
+- [x] `init.sql` com criação da tabela
+- [x] `package.json` na raiz com scripts `start`, `stop` e `test`
+- [x] `start.js` com verificações de Docker e subida dos containers
+- [x] `stop.js` que derruba todos os containers limpo
+- [x] `test.js` que roda todos os testes em sequência com resumo comparativo no terminal
+- [x] `npm run start` sobe tudo sem erro
+- [x] `npm run stop` derruba tudo sem erro
+- [x] `npm run test` executa todos os testes e exibe resultado final
 
 ### Felipe
-- [ ] GET /producoes com paginação funcionando
-- [ ] GET /producoes/:id com 404
-- [ ] POST /producoes com validação
-- [ ] PUT /producoes/:id com 404
-- [ ] DELETE /producoes/:id com 404
+- [x] GET /api/producoes com paginação funcionando
+- [x] GET /api/producoes/:id com 404
+- [x] POST /api/producoes com validação
+- [x] PUT /api/producoes/:id com 404
+- [x] DELETE /api/producoes/:id com 404
 
 ### Júlia
 - [ ] Tabela renderizando registros da API
@@ -548,19 +546,19 @@ npx playwright test
 - [ ] Swagger UI acessível em `/docs`
 - [ ] Bodies, parâmetros e respostas documentados
 - [ ] dredd instalado e configurado
-- [ ] `dredd api/swagger.yaml http://localhost:3000` passa sem erro
+- [ ] `dredd api/swagger.yaml http://localhost:3000/api` passa sem erro
 
-### Klaus
+### Lucas
 - [ ] 9 casos de teste unitário Jest implementados
 - [ ] Repositório mockado com `jest.fn()`
 - [ ] 6 casos de teste de integração Supertest implementados
 - [ ] `npm test` passa todos os casos sem erro
 
-### Lucas
-- [ ] `load-test.js` percorre os 5 endpoints com 15 VUs por 30s
-- [ ] `stress-test.js` com stages crescendo até 100 VUs
-- [ ] Thresholds definidos em ambos os scripts
-- [ ] `k6 run` exibe métricas corretamente nos dois scripts
+### Klaus
+- [x] `load-test.js` percorre os 5 endpoints com 15 VUs por 30s
+- [x] `stress-test.js` com stages crescendo até 100 VUs
+- [x] Thresholds definidos em ambos os scripts
+- [x] `k6 run` exibe métricas corretamente nos dois scripts
 
 ### Miguel
 - [ ] 5 fluxos Playwright implementados

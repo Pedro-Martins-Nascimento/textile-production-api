@@ -149,7 +149,7 @@ runSuite(
 // 3. Dredd contrato
 runSuite(
   'Dredd contrato         ',
-  'dredd swagger.yaml http://localhost:3000',
+  'dredd swagger.yaml http://localhost:3000/api',
   './api'
 )
 
