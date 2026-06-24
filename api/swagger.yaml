@@ -1,0 +1,298 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Registro de Produção de Teares Circulares
+  description: API RESTful para gestão de registros de produção de teares circulares industriais.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+paths:
+
+  /producoes:
+    get:
+      summary: Listar todas as produções
+      description: Retorna uma lista paginada de registros de produção. Permite filtrar por turno.
+      parameters:
+        - name: page
+          in: query
+          description: Número da página
+          required: false
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Quantidade de registros por página
+          required: false
+          schema:
+            type: integer
+            default: 10
+            example: 10
+        - name: turno
+          in: query
+          description: Filtrar por turno (1, 2 ou 3)
+          required: false
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+            example: 1
+      responses:
+        '200':
+          description: Lista retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    type: object
+                    properties:
+                      pagina_atual:
+                        type: integer
+                        example: 1
+                      limite_por_pagina:
+                        type: integer
+                        example: 10
+                      total_registros:
+                        type: integer
+                        example: 6226
+                      total_paginas:
+                        type: integer
+                        example: 623
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Producao'
+
+    post:
+      summary: Criar novo registro de produção
+      description: Insere um novo registro de produção no sistema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProducaoInput'
+            example:
+              data_producao: "2026-04-20"
+              numero_tear: "T-042"
+              codigo_produto: "MAL-001"
+              turno: 1
+              qualidade: 1
+              quilos: 8.5
+              pecas: 270
+      responses:
+        '201':
+          description: Registro criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producao'
+        '400':
+          description: Dados inválidos ou campo obrigatório ausente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                message: "Todos os campos da produção são obrigatórios."
+
+  /producoes/{id}:
+    get:
+      summary: Buscar produção por ID
+      description: Retorna um registro específico pelo seu ID.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Registro encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producao'
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                message: "Produção não encontrada"
+
+    put:
+      summary: Atualizar registro de produção
+      description: Atualiza todos os dados de um registro existente pelo ID.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProducaoInput'
+            example:
+              data_producao: "2026-04-20"
+              numero_tear: "T-042"
+              codigo_produto: "MAL-001"
+              turno: 2
+              qualidade: 2
+              quilos: 9.0
+              pecas: 300
+      responses:
+        '200':
+          description: Registro atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producao'
+        '400':
+          description: Campos obrigatórios ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                message: "Todos os campos são obrigatórios para atualização total."
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                message: "Produção não encontrada para atualização."
+
+    delete:
+      summary: Remover registro de produção
+      description: Remove um registro de produção pelo ID.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Registro removido com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Registro com ID 1 removido com sucesso."
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                message: "Produção não encontrada para exclusão."
+
+components:
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      description: ID do registro de produção
+      required: true
+      example: 1
+      schema:
+        type: integer
+        example: 1
+
+  schemas:
+
+    Producao:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identificador único
+          example: 1
+        data_producao:
+          type: string
+          format: date
+          description: Data do registro de produção
+          example: "2026-04-20"
+        numero_tear:
+          type: string
+          description: Identificador do tear
+          example: "T-042"
+        codigo_produto:
+          type: string
+          description: Código do produto produzido
+          example: "MAL-001"
+        turno:
+          type: integer
+          description: Turno de trabalho (1, 2 ou 3)
+          enum: [1, 2, 3]
+          example: 1
+        qualidade:
+          type: integer
+          description: Classificação de qualidade (1, 2 ou 3)
+          enum: [1, 2, 3]
+          example: 1
+        quilos:
+          type: number
+          format: float
+          description: Volume produzido em kg
+          example: 8.5
+        pecas:
+          type: integer
+          description: Quantidade de peças produzidas
+          example: 270
+
+    ProducaoInput:
+      type: object
+      required:
+        - data_producao
+        - numero_tear
+        - codigo_produto
+        - turno
+        - qualidade
+        - quilos
+        - pecas
+      properties:
+        data_producao:
+          type: string
+          format: date
+          description: Data do registro (não pode ser futura)
+          example: "2026-04-20"
+        numero_tear:
+          type: string
+          description: Identificador do tear
+          example: "T-042"
+        codigo_produto:
+          type: string
+          description: Código do produto produzido
+          example: "MAL-001"
+        turno:
+          type: integer
+          description: Turno de trabalho (1, 2 ou 3)
+          enum: [1, 2, 3]
+          example: 1
+        qualidade:
+          type: integer
+          description: Classificação de qualidade (1, 2 ou 3)
+          enum: [1, 2, 3]
+          example: 1
+        quilos:
+          type: number
+          format: float
+          description: Volume produzido em kg (deve ser maior que zero)
+          example: 8.5
+        pecas:
+          type: integer
+          description: Quantidade de peças produzidas (deve ser maior que zero)
+          example: 270
+
+    Erro:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensagem de erro
