@@ -5,7 +5,7 @@ const criarProducao = async (dados) => {
   let {qualidade,turno}=dados;
   
   if (!data_producao || !numero_tear || !codigo_produto || turno === undefined || !qualidade || quilos === undefined || pecas === undefined) {
-    throw new Error("Todos los campos são estritamente obrigatórios.");
+    throw new Error("Todos os campos são estritamente obrigatórios.");
   }
 
   turno=parseInt(turno)

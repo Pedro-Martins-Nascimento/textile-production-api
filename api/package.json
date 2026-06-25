@@ -6,7 +6,16 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "coverage": "jest --coverage --runInBand"
+  },
+  "jest": {
+    "coverageDirectory": "../coverage",
+    "coverageReporters": ["html", "text-summary"],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/app.js"
+    ]
   },
   "dependencies": {
     "cors": "^2.8.5",

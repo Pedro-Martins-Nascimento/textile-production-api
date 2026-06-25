@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "RESTful API for textile production tracking with automated tests",
   "scripts": {
+    "setup": "node setup.js",
     "start": "node start.js",
     "stop": "node stop.js",
     "test": "node test.js"

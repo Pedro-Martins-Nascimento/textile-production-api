@@ -13,19 +13,6 @@ describe('producao.integration', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  test('GET /producoes/:id deve retornar registro existente com status 200', async () => {
-    const res = await request(BASE_URL).get('/producoes/1');
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('id', 1);
-  });
-
-  test('GET /producoes/:id inexistente deve retornar 404', async () => {
-    const res = await request(BASE_URL).get('/producoes/999999');
-
-    expect(res.status).toBe(404);
-  });
-
   test('POST /producoes deve criar registro e retornar 201', async () => {
     const res = await request(BASE_URL)
       .post('/producoes')
@@ -43,6 +30,19 @@ describe('producao.integration', () => {
     expect(res.body).toHaveProperty('id');
 
     global.__idCriado = res.body.id;
+  });
+
+  test('GET /producoes/:id deve retornar registro existente com status 200', async () => {
+    const res = await request(BASE_URL).get(`/producoes/${global.__idCriado}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('id', global.__idCriado);
+  });
+
+  test('GET /producoes/:id inexistente deve retornar 404', async () => {
+    const res = await request(BASE_URL).get('/producoes/999999');
+
+    expect(res.status).toBe(404);
   });
 
   test('PUT /producoes/:id deve atualizar registro e retornar 200', async () => {

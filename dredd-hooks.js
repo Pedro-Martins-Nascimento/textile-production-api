@@ -27,7 +27,7 @@ hooks.beforeEach((transaction, done) => {
   // PUT 400: manda body vazio para forçar erro de validação
   if (name.includes('Atualizar registro') && name.includes('400')) {
     transaction.request.body = '{}';
-    transaction.fullPath = `/producoes/1`;
+    transaction.fullPath = `/api/producoes/1`;
     transaction.request.uri = `/producoes/1`;
     return done();
   }
@@ -45,14 +45,14 @@ hooks.beforeEach((transaction, done) => {
       pecas: 270
     });
     const req = http.request({
-      host: 'localhost', port: 3000, path: '/producoes', method: 'POST',
+      host: 'localhost', port: 3000, path: '/api/producoes', method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         idCriado = JSON.parse(data).id;
-        transaction.fullPath = `/producoes/${idCriado}`;
+        transaction.fullPath = `/api/producoes/${idCriado}`;
         transaction.request.uri = `/producoes/${idCriado}`;
         hooks.log(`Usando ID criado: ${idCriado}`);
         done();
@@ -62,7 +62,7 @@ hooks.beforeEach((transaction, done) => {
     req.write(body);
     req.end();
   } else if (transaction.request.uri === '/producoes/1' && name.includes('404')) {
-    transaction.fullPath = `/producoes/999999`;
+    transaction.fullPath = `/api/producoes/999999`;
     transaction.request.uri = `/producoes/999999`;
     done();
   } else {

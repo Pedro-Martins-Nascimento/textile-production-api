@@ -6,6 +6,40 @@ API RESTful com testes automatizados para gestão de registros de produção de 
 
 ---
 
+## 📋 Requisitos do Projeto (Critérios do Professor)
+
+### Endpoints obrigatórios
+
+| # | Endpoint | Status |
+|---|----------|--------|
+| 1 | GET paginado — listagem dos registros | ✅ `GET /api/producoes?page=1&limit=10` |
+| 2 | GET by ID — consulta de um registro específico | ✅ `GET /api/producoes/:id` |
+| 3 | POST — criação de um novo registro | ✅ `POST /api/producoes` |
+| 4 | PUT — atualização de um registro existente | ✅ `PUT /api/producoes/:id` |
+| 5 | DELETE — exclusão de um registro | ✅ `DELETE /api/producoes/:id` |
+
+### Testes obrigatórios
+
+| Tipo | Ferramenta | Status |
+|------|-----------|--------|
+| Teste unitário na API | Jest | ✅ `api/tests/unit/` |
+| Teste de carga | Grafana K6 | ✅ `k6/load-test.js` e `k6/stress-test.js` |
+| Teste no front-end | Playwright | ⏳ `frontend/tests/producao.spec.js` |
+
+### O que precisa ser demonstrado na apresentação
+
+- [ ] A entidade escolhida e o objetivo da aplicação
+- [ ] A arquitetura geral da solução
+- [ ] Os cinco endpoints implementados
+- [ ] A documentação OpenAPI da API (`http://localhost:3000/docs`)
+- [ ] O funcionamento do front-end
+- [ ] Os testes unitários da API
+- [ ] Os testes de carga com Grafana K6
+- [ ] Os testes do front-end com Playwright
+- [ ] Os resultados obtidos na execução dos testes (`npm test`)
+
+---
+
 ## 👥 Equipe e Divisão de Responsabilidades
 
 | Pessoa | Responsabilidade |
@@ -16,7 +50,7 @@ API RESTful com testes automatizados para gestão de registros de produção de 
 | **Lucas** | Testes unitários (Jest) + testes de integração (Supertest) |
 | **Klaus** | Testes de carga e estresse — Grafana K6 |
 | **Mirella** | Documentação — `swagger.yaml` + Swagger UI + teste de contrato (dredd) |
-| **Pedro** | Infraestrutura — `docker-compose.yml`, `Dockerfile`, script SQL, `start.js`, `stop.js`, `test.js` |
+| **Pedro** | Infraestrutura — `docker-compose.yml`, `Dockerfile`, script SQL, `start.js`, `stop.js`, `test.js`, `setup.js` |
 
 ---
 
@@ -43,7 +77,7 @@ Etapa 4 — Lucas + Klaus + Miguel + Mirella (em paralelo)
         ↓
 Etapa 5 — Pedro
   └── Integra tudo: valida docker compose up, implementa start.js e test.js,
-      garante que npm run start e npm run test funcionam do zero
+      garante que npm run setup + npm run start + npm run test funcionam do zero
 ```
 
 ---
@@ -51,19 +85,19 @@ Etapa 5 — Pedro
 ## 🗂️ Estrutura do Projeto
 
 ```
-projeto-producao/
+textile-production-api/
 ├── api/
 │   ├── src/
 │   │   ├── controllers/
-│   │   │   └── producao.controller.js
+│   │   │   └── ProducaoController.js
 │   │   ├── services/
-│   │   │   └── producao.service.js
+│   │   │   └── ProducaoService.js
 │   │   ├── repositories/
-│   │   │   └── producao.repository.js
+│   │   │   └── ProducaoRepository.js
 │   │   ├── routes/
-│   │   │   └── producao.routes.js
-│   │   ├── middleware/
-│   │   │   └── validation.js
+│   │   │   └── ProducaoRoute.js
+│   │   ├── db/
+│   │   │   └── ConexaoDB.js
 │   │   └── app.js
 │   ├── tests/
 │   │   ├── unit/
@@ -71,6 +105,7 @@ projeto-producao/
 │   │   └── integration/
 │   │       └── producao.integration.test.js
 │   ├── swagger.yaml
+│   ├── init.sql
 │   ├── Dockerfile
 │   └── package.json
 │
@@ -86,10 +121,16 @@ projeto-producao/
 │   ├── load-test.js        ← teste de carga
 │   └── stress-test.js      ← teste de estresse
 │
+├── nginx/
+│   └── nginx.conf
+│
 ├── docker-compose.yml
-├── package.json        ← scripts npm
-├── start.js            ← script de inicialização
-└── test.js             ← script que roda todos os testes
+├── dredd-hooks.js          ← hooks do teste de contrato
+├── package.json            ← scripts npm da raiz
+├── setup.js                ← instala todas as dependências
+├── start.js                ← sobe o ambiente Docker
+├── stop.js                 ← derruba o ambiente Docker
+└── test.js                 ← roda todos os testes em sequência
 ```
 
 ---
@@ -101,30 +142,14 @@ projeto-producao/
 | Coluna | Tipo | Descrição |
 |--------|------|-----------|
 | `id` | SERIAL PRIMARY KEY | Identificador único |
-| `data_producao` | DATE | Data do registro |
-| `numero_tear` | VARCHAR | Identificador do tear (ex: "T-042") |
-| `codigo_produto` | VARCHAR | Código do produto (ex: "MAL-001") |
+| `data_producao` | TIMESTAMP | Data e hora do registro |
+| `numero_tear` | VARCHAR(20) | Identificador do tear (ex: "T-042") |
+| `codigo_produto` | VARCHAR(30) | Código do produto (ex: "MAL-001") |
 | `turno` | INTEGER | Turno de trabalho: 1, 2 ou 3 |
-| `qualidade` | INTEGER | Classificação: 1, 2 ou 3 (1=Alta, 2=Média, 3=Baixa) |
-| `quilos` | DECIMAL | Volume produzido em kg |
+| `qualidade` | INTEGER | Classificação: 1 (Alta), 2 (Média) ou 3 (Baixa) |
+| `quilos` | DECIMAL(10,2) | Volume produzido em kg |
 | `pecas` | INTEGER | Quantidade de peças produzidas |
 | `created_at` | TIMESTAMP | Data de inserção do registro |
-
-**SQL de criação:**
-
-```sql
-CREATE TABLE producoes (
-  id SERIAL PRIMARY KEY,
-  data_producao TIMESTAMP NOT NULL,
-  numero_tear VARCHAR(20) NOT NULL,
-  codigo_produto VARCHAR(30) NOT NULL,
-  turno INTEGER NOT NULL CHECK (turno IN (1, 2, 3)),
-  qualidade INTEGER NOT NULL CHECK (qualidade IN (1, 2, 3)),
-  quilos DECIMAL(10, 2) NOT NULL CHECK (quilos > 0),
-  pecas INTEGER NOT NULL CHECK (pecas > 0),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
 
 ---
 
@@ -132,24 +157,36 @@ CREATE TABLE producoes (
 
 ### Pré-requisitos
 
-- Node.js instalado (qualquer versão recente)
+- Node.js v18 ou superior
 - Docker instalado e **rodando**
 
-### Subir tudo
+### 1. Instalar dependências
 
-Na raiz do projeto, execute:
+Na raiz do projeto, execute **uma única vez**:
 
 ```bash
-npm run start
+npm run setup
+```
+
+O script `setup.js` faz automaticamente:
+1. Verifica a versão do Node.js
+2. Instala as dependências da API (`api/node_modules`)
+3. Instala as dependências do frontend (`frontend/node_modules`)
+4. Verifica e instala o Dredd globalmente se não estiver instalado
+5. Verifica se o Docker está instalado e rodando
+6. Verifica se o K6 está disponível (opcional)
+
+### 2. Subir o ambiente
+
+```bash
+npm start
 ```
 
 O script `start.js` faz automaticamente:
-1. Verifica se o Docker está instalado
-2. Verifica se o Docker está rodando
-3. Verifica se o Docker Compose está disponível
-4. Verifica se as imagens já existem — se sim sobe sem rebuild, se não faz build
-5. Se os containers já estiverem rodando, derruba e sobe novamente
-6. Aguarda a API responder antes de liberar
+1. Verifica Docker e Docker Compose
+2. Derruba containers anteriores se existirem
+3. Faz build e sobe os 3 containers
+4. Aguarda PostgreSQL e API responderem antes de liberar
 
 Ao final, os serviços estarão disponíveis em:
 - Front-end: `http://localhost:8080`
@@ -157,120 +194,87 @@ Ao final, os serviços estarão disponíveis em:
 - Swagger UI: `http://localhost:3000/docs`
 - PostgreSQL: `localhost:5432`
 
-### Rodar todos os testes
+### 3. Rodar todos os testes
 
 ```bash
-npm run test
+npm test
 ```
 
-O script `test.js` executa todos os testes em sequência e exibe um resumo comparativo no terminal ao final:
+O script `test.js` executa todas as suites em sequência, exibindo a saída real de cada uma no terminal. Ao final mostra um resumo:
 
 ```
-============================================
-  🧪 Executando todos os testes
-============================================
-
-[1/6] Testes unitários (Jest)................. ✅ 9/9 passaram
-[2/6] Testes de integração (Supertest)........ ✅ 6/6 passaram
-[3/6] Teste de contrato (dredd)............... ✅ 5/5 endpoints validados
-[4/6] Teste de carga K6....................... ✅ p95: 120ms | erros: 0.0% | reqs: 48/s
-[5/6] Teste de estresse K6................... ✅ p95: 340ms | erros: 0.2% | reqs: 210/s
-[6/6] Testes de front-end (Playwright)........ ✅ 5/5 passaram
-
 ============================================
   Resultado final
 ============================================
 
-  Suite                  Status    Passou  Falhou
-  ─────────────────────────────────────────────
-  Jest unitário          ✅ OK      9       0
-  Supertest integração   ✅ OK      6       0
-  Dredd contrato         ✅ OK      5       0
-  K6 carga               ✅ OK      -       -
-  K6 estresse            ✅ OK      -       -
-  Playwright             ✅ OK      5       0
-  ─────────────────────────────────────────────
-  Total                             30      0
+  Jest unitário              ✅ OK
+  Supertest integração       ✅ OK
+  Dredd contrato             ✅ OK
+  K6 carga                   ✅ OK
+  K6 estresse                ✅ OK
+  Playwright                 ✅ OK
 
   ✅ Todos os testes passaram!
 ============================================
 ```
 
-Se algum teste falhar, aparece em vermelho com o motivo:
+> ⚠️ Requer que o ambiente esteja no ar (`npm start`) antes de rodar.
 
-```
-[1/5] Testes unitários (Jest)................. ❌ 8/9 passaram
-  → FALHOU: findById deve retornar 404 quando ID não existe
-```
-
-> ⚠️ Requer que o ambiente esteja no ar (`npm run start`) antes de rodar.
-
-### Derrubar
+### 4. Gerar relatório de cobertura de testes
 
 ```bash
-docker compose down
+cd api && npm run coverage
 ```
 
-### Ver logs
+Gera um relatório HTML em `coverage/index.html` mostrando quais linhas do código são cobertas pelos testes unitários.
+
+### Derrubar o ambiente
 
 ```bash
-docker compose logs -f
-```
-
-### Variáveis de ambiente (`api/.env`)
-
-```env
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=producao
-PORT=3000
+npm stop
 ```
 
 ---
 
 ## 🔌 Endpoints da API
 
+Base URL: `http://localhost:3000/api`
+
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/api/producoes?page=1&limit=10&turno=1` | Listagem paginada |
-| GET | `/api/producoes/:id` | Busca por ID |
-| POST | `/api/producoes` | Cria registro |
-| PUT | `/api/producoes/:id` | Atualiza registro |
-| DELETE | `/api/producoes/:id` | Remove registro |
+| GET | `/producoes?page=1&limit=10&turno=1` | Listagem paginada |
+| GET | `/producoes/:id` | Busca por ID |
+| POST | `/producoes` | Cria registro |
+| PUT | `/producoes/:id` | Atualiza registro |
+| DELETE | `/producoes/:id` | Remove registro |
 
-### GET /api/producoes
+### GET /producoes
 **Resposta 200:**
 ```json
 {
+  "meta": {
+    "pagina_atual": 1,
+    "limite_por_pagina": 10,
+    "total_registros": 10,
+    "total_paginas": 1
+  },
   "data": [
     {
       "id": 1,
-      "data_producao": "2026-04-20",
-      "numero_tear": "T-042",
+      "data_producao": "2026-04-20T06:15:22.000Z",
+      "numero_tear": "T-001",
       "codigo_produto": "MAL-001",
       "turno": 1,
       "qualidade": 1,
-      "quilos": 8.5,
-      "pecas": 270,
-      "created_at": "2026-04-20T10:00:00.000Z"
+      "quilos": "8.50",
+      "pecas": 275,
+      "created_at": "2026-04-20T06:15:22.000Z"
     }
-  ],
-  "page": 1,
-  "limit": 10,
-  "total": 6226
+  ]
 }
 ```
 
-### GET /api/producoes/:id
-**Resposta 200:** registro encontrado.
-**Resposta 404:**
-```json
-{ "error": "Registro não encontrado" }
-```
-
-### POST /api/producoes
+### POST /producoes
 **Body:**
 ```json
 {
@@ -284,20 +288,17 @@ PORT=3000
 }
 ```
 **Resposta 201:** registro criado.
-**Resposta 400:**
-```json
-{ "error": "Campo 'quilos' é obrigatório" }
-```
+**Resposta 400:** campo obrigatório ausente ou valor inválido.
 
-### PUT /api/producoes/:id
+### PUT /producoes/:id
 **Body:** mesmos campos do POST.
 **Resposta 200:** registro atualizado.
 **Resposta 404:** registro não encontrado.
 
-### DELETE /api/producoes/:id
+### DELETE /producoes/:id
 **Resposta 200:**
 ```json
-{ "message": "Registro removido com sucesso" }
+{ "message": "Registro com ID 1 removido com sucesso." }
 ```
 **Resposta 404:** registro não encontrado.
 
@@ -308,30 +309,21 @@ PORT=3000
 **Arquivo:** `api/swagger.yaml`
 **Interface:** `http://localhost:3000/docs`
 
-O arquivo documenta todos os endpoints, parâmetros, bodies e respostas seguindo o padrão OpenAPI 3.0. Deve ser escrito após a API estar implementada pelo Felipe.
-
----
+O arquivo documenta todos os endpoints, parâmetros, bodies e respostas seguindo o padrão OpenAPI 3.0.
 
 ### Teste de Contrato — dredd
 
-Valida automaticamente que as respostas reais da API batem exatamente com o que está documentado no `swagger.yaml`. Se o Felipe mudar um campo e esquecer de atualizar a doc, o teste pega.
+Valida automaticamente que as respostas reais da API batem com o que está documentado no `swagger.yaml`.
 
-**Instalação:**
+**Como rodar manualmente:**
 ```bash
-npm install -g dredd
+cd api
+dredd swagger.yaml http://localhost:3000/api --hookfiles=../dredd-hooks.js
 ```
 
-**Como rodar:**
-```bash
-dredd api/swagger.yaml http://localhost:3000/api
-```
+O arquivo `dredd-hooks.js` (na raiz) cria registros dinamicamente antes dos testes que precisam de um ID válido, garantindo que GET/PUT/DELETE por ID funcionem sem depender de dados fixos no banco.
 
-**O que valida:**
-- Todos os 5 endpoints respondem com o status code documentado
-- A estrutura do JSON retornado bate com o schema do swagger
-- Campos obrigatórios estão presentes nas respostas
-
-> ⚠️ Depende da API no ar e do swagger.yaml completo.
+> ⚠️ Depende da API no ar.
 
 ---
 
@@ -347,11 +339,11 @@ Interface acessível em `http://localhost:8080`.
 - Botão "Excluir" remove o registro com confirmação
 
 **Arquivos:**
-- `index.html` — estrutura da página, tabela e formulário modal
-- `style.css` — estilização geral
-- `app.js` — chamadas `fetch` à API, renderização da tabela, lógica do formulário
+- `frontend/index.html` — estrutura da página
+- `frontend/style.css` — estilização
+- `frontend/app.js` — chamadas `fetch` à API, renderização da tabela, lógica do formulário
 
-> ⚠️ Depende da API do Felipe estar no ar para funcionar.
+> A API é acessível pelo frontend via `/api/producoes` (mesmo host, nginx faz o proxy).
 
 ---
 
@@ -359,46 +351,23 @@ Interface acessível em `http://localhost:8080`.
 
 ### Testes Unitários — `api/tests/unit/producao.service.test.js`
 
-Testa a camada service com repositório **mockado** via `jest.fn()`, isolando a lógica de negócio do banco.
+Testa a camada service com repositório **mockado** via `jest.mock()`, isolando a lógica de negócio do banco.
 
 **Como rodar:**
 ```bash
-cd api
-npm test
+cd api && npm test -- --testPathPattern=unit
 ```
-
-**Casos a implementar:**
-
-| Caso | Descrição |
-|------|-----------|
-| `listAll` — sucesso | Retorna objeto com `data`, `page`, `limit` e `total` |
-| `findById` — sucesso | Retorna o registro correto |
-| `findById` — não encontrado | Lança erro 404 |
-| `create` — sucesso | Retorna registro criado com id |
-| `create` — campo faltando | Lança erro 400 |
-| `update` — sucesso | Retorna registro atualizado |
-| `update` — não encontrado | Lança erro 404 |
-| `delete` — sucesso | Retorna mensagem de sucesso |
-| `delete` — não encontrado | Lança erro 404 |
-
----
 
 ### Testes de Integração — `api/tests/integration/producao.integration.test.js`
 
-Testa os endpoints reais contra o banco PostgreSQL rodando. Valida o fluxo completo: requisição → controller → service → repository → banco → resposta. Usa **Supertest**.
+Testa os endpoints reais contra a API rodando no Docker. Valida o fluxo completo: requisição → controller → service → repository → banco → resposta.
 
-**Casos a implementar:**
+**Como rodar:**
+```bash
+cd api && npm test -- --testPathPattern=integration
+```
 
-| Caso | Descrição |
-|------|-----------|
-| `GET /producoes` | Retorna lista paginada com status 200 |
-| `GET /producoes/:id` | Retorna registro existente com status 200 |
-| `GET /producoes/:id` inexistente | Retorna status 404 |
-| `POST /producoes` | Cria registro e retorna status 201 |
-| `PUT /producoes/:id` | Atualiza registro e retorna status 200 |
-| `DELETE /producoes/:id` | Remove registro e retorna status 200 |
-
-> ⚠️ Depende da API do Felipe implementada e do banco no ar.
+> ⚠️ Depende da API no ar (`npm start`).
 
 ---
 
@@ -406,64 +375,29 @@ Testa os endpoints reais contra o banco PostgreSQL rodando. Valida o fluxo compl
 
 **Instalação do K6:** https://k6.io/docs/get-started/installation/
 
-**Fluxo testado por VU (ambos os scripts):**
-1. `GET /api/producoes?page=1&limit=10`
-2. `GET /api/producoes/1`
-3. `POST /api/producoes` com dados fictícios de produção
-4. `PUT /api/producoes/{id}` no registro criado
-5. `DELETE /api/producoes/{id}` no registro criado
-
-**Métricas a apresentar:**
-- `http_req_duration` — tempo de resposta (p95)
-- `http_req_failed` — taxa de erros
-- `http_reqs` — requisições por segundo
-
----
-
 ### Teste de Carga — `k6/load-test.js`
-Simula o uso normal do sistema por operadores de produção.
 
-**Como rodar:**
+Simula o uso normal do sistema.
+
 ```bash
 k6 run k6/load-test.js
 ```
 
-**Configuração:**
 - 15 VUs constantes por 30 segundos
-
-**Thresholds:**
-- p95 abaixo de 500ms
-- taxa de erro abaixo de 1%
-
-**Responde:** "A API aguenta o uso diário normal?"
-
----
+- Threshold: p95 < 500ms, erros < 1%
 
 ### Teste de Estresse — `k6/stress-test.js`
-Aumenta os usuários progressivamente até encontrar o limite da aplicação.
 
-**Como rodar:**
+Aumenta usuários progressivamente até encontrar o limite.
+
 ```bash
 k6 run k6/stress-test.js
 ```
 
-**Configuração:**
-```js
-stages: [
-  { duration: '10s', target: 10  }, // aquece
-  { duration: '20s', target: 50  }, // carga normal
-  { duration: '20s', target: 100 }, // estresse
-  { duration: '10s', target: 0   }, // resfria
-]
-```
+- Stages: 10 → 50 → 100 VUs
+- Threshold: p95 < 1000ms, erros < 5%
 
-**Thresholds:**
-- p95 abaixo de 1000ms
-- taxa de erro abaixo de 5%
-
-**Responde:** "Qual o limite máximo antes da API degradar?"
-
-> ⚠️ Depende da API do Felipe estar no ar.
+> ⚠️ Depende da API no ar.
 
 ---
 
@@ -478,38 +412,83 @@ npx playwright install
 npx playwright test
 ```
 
-**Fluxos a implementar:**
+O professor exige **5 fluxos obrigatórios**, um para cada endpoint da API. Cada teste deve abrir o navegador, interagir com a interface e verificar o resultado visualmente.
 
-| Teste | Descrição |
-|-------|-----------|
-| Listagem | Abre o sistema e verifica que a tabela renderiza os registros de produção |
-| Consulta | Clica em um registro e verifica que os detalhes daquela produção abrem corretamente |
-| Criação | Operador preenche o formulário com tear, turno, quilos e peças — registro aparece na tabela |
-| Edição | Supervisor clica em editar, corrige o valor de quilos, salva e verifica o valor atualizado |
-| Exclusão | Supervisor remove um registro duplicado, confirma o modal e verifica que desaparece |
+### Fluxo 1 — Listagem (GET paginado)
+Valida o endpoint `GET /api/producoes`.
 
-> ⚠️ Depende do front-end da Júlia estar pronto e da API no ar.
+```
+1. Abre http://localhost:8080
+2. Verifica que a tabela de registros está visível na página
+3. Verifica que há pelo menos 1 linha de registro na tabela
+4. Verifica que as colunas esperadas estão presentes (tear, produto, turno, etc.)
+```
+
+### Fluxo 2 — Consulta por ID (GET by ID)
+Valida o endpoint `GET /api/producoes/:id`.
+
+```
+1. Abre http://localhost:8080
+2. Clica em um registro específico da tabela (ou navega para a URL com o ID)
+3. Verifica que os detalhes daquele registro aparecem corretamente
+4. Verifica que o ID exibido bate com o registro selecionado
+```
+
+### Fluxo 3 — Criação (POST)
+Valida o endpoint `POST /api/producoes`.
+
+```
+1. Abre http://localhost:8080
+2. Clica no botão de novo registro
+3. Preenche todos os campos do formulário:
+   - Data de produção (uma data passada)
+   - Número do tear (ex: "T-TESTE")
+   - Código do produto (ex: "MAL-001")
+   - Turno (1, 2 ou 3)
+   - Qualidade (1, 2 ou 3)
+   - Quilos (ex: 10.5)
+   - Peças (ex: 100)
+4. Clica em salvar
+5. Verifica que o registro criado aparece na tabela
+```
+
+### Fluxo 4 — Atualização (PUT)
+Valida o endpoint `PUT /api/producoes/:id`.
+
+```
+1. Abre http://localhost:8080
+2. Localiza um registro na tabela
+3. Clica no botão de editar daquele registro
+4. Altera um campo (ex: muda o número de peças)
+5. Salva as alterações
+6. Verifica que o valor atualizado aparece na tabela
+```
+
+### Fluxo 5 — Exclusão (DELETE)
+Valida o endpoint `DELETE /api/producoes/:id`.
+
+```
+1. Abre http://localhost:8080
+2. Localiza um registro na tabela e anota o ID
+3. Clica no botão de excluir daquele registro
+4. Confirma a exclusão
+5. Verifica que o registro não aparece mais na tabela
+```
+
+> ⚠️ Depende do front-end da Júlia estar pronto e da API no ar (`npm start`).
+> Os testes devem rodar contra `http://localhost:8080` — configure a `baseURL` no `playwright.config.js`.
 
 ---
 
 ## 🐳 Infraestrutura — Pedro
 
-**Arquivos:** `docker-compose.yml`, `api/Dockerfile`, `api/init.sql`
-
 **Containers:**
 
 | Container | Tecnologia | Porta |
 |-----------|-----------|-------|
-| `api` | Node.js + Express | 3000 |
-| `postgres` | PostgreSQL | 5432 |
-| `frontend` | nginx | 8080 |
-
-**Responsabilidades:**
-- `docker-compose.yml` orquestrando os 3 containers
-- `Dockerfile` da API com build do Node.js
-- `init.sql` com o script de criação da tabela `producoes`
-- Configuração do nginx para servir o front-end estático
-- Garantir que `docker compose up --build` sobe tudo sem erro ao final
+| `producao-api` | Node.js 20 + Express | 3000 |
+| `producao-postgres` | PostgreSQL 16 | 5432 |
+| `producao-frontend` | nginx | 8080 |
 
 ---
 
@@ -518,19 +497,22 @@ npx playwright test
 ### Pedro
 - [x] `docker-compose.yml` com os 3 containers
 - [x] `Dockerfile` da API
-- [x] `init.sql` com criação da tabela
-- [x] `package.json` na raiz com scripts `start`, `stop` e `test`
+- [x] `init.sql` com criação da tabela e dados de seed
+- [x] `nginx/nginx.conf` com proxy para a API
+- [x] `package.json` na raiz com scripts `setup`, `start`, `stop` e `test`
+- [x] `setup.js` — instala todas as dependências automaticamente
 - [x] `start.js` com verificações de Docker e subida dos containers
-- [x] `stop.js` que derruba todos os containers limpo
-- [x] `test.js` que roda todos os testes em sequência com resumo comparativo no terminal
-- [x] `npm run start` sobe tudo sem erro
-- [x] `npm run stop` derruba tudo sem erro
-- [x] `npm run test` executa todos os testes e exibe resultado final
+- [x] `stop.js` que derruba todos os containers
+- [x] `test.js` que roda todos os testes em sequência com resumo no terminal
+- [x] `npm run setup` instala tudo sem erro
+- [x] `npm start` sobe tudo sem erro
+- [x] `npm stop` derruba tudo sem erro
+- [x] `npm test` executa todos os testes e exibe resultado final
 
 ### Felipe
-- [x] GET /api/producoes com paginação funcionando
+- [x] GET /api/producoes com paginação e filtro por turno
 - [x] GET /api/producoes/:id com 404
-- [x] POST /api/producoes com validação
+- [x] POST /api/producoes com validação de campos e regras de negócio
 - [x] PUT /api/producoes/:id com 404
 - [x] DELETE /api/producoes/:id com 404
 
@@ -542,24 +524,22 @@ npx playwright test
 - [ ] Filtro por turno funcionando
 
 ### Mirella
-- [ ] Todos os 5 endpoints documentados no `swagger.yaml`
-- [ ] Swagger UI acessível em `/docs`
-- [ ] Bodies, parâmetros e respostas documentados
-- [ ] dredd instalado e configurado
-- [ ] `dredd api/swagger.yaml http://localhost:3000/api` passa sem erro
+- [x] Todos os endpoints documentados no `swagger.yaml`
+- [x] Swagger UI acessível em `http://localhost:3000/docs`
+- [x] Bodies, parâmetros e respostas documentados
+- [x] `dredd-hooks.js` configurado com criação dinâmica de IDs
+- [x] Teste de contrato passa com 10/10 endpoints validados
 
 ### Lucas
-- [ ] 9 casos de teste unitário Jest implementados
-- [ ] Repositório mockado com `jest.fn()`
-- [ ] 6 casos de teste de integração Supertest implementados
-- [ ] `npm test` passa todos os casos sem erro
+- [x] Testes unitários Jest implementados (service mockado)
+- [x] Testes de integração Supertest implementados (6 casos)
+- [x] `npm test` passa todos os casos sem erro
 
 ### Klaus
-- [x] `load-test.js` percorre os 5 endpoints com 15 VUs por 30s
+- [x] `load-test.js` com 15 VUs por 30s
 - [x] `stress-test.js` com stages crescendo até 100 VUs
 - [x] Thresholds definidos em ambos os scripts
-- [x] `k6 run` exibe métricas corretamente nos dois scripts
 
 ### Miguel
-- [ ] 5 fluxos Playwright implementados
+- [ ] Fluxos Playwright implementados
 - [ ] `npx playwright test` passa sem erro
