@@ -1,0 +1,13 @@
+{
+  "name": "textile-production-frontend-tests",
+  "version": "1.0.0",
+  "description": "Testes E2E com Playwright para o sistema de produção de teares circulares",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright test && playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}

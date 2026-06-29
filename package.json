@@ -1,15 +1,18 @@
 {
   "name": "textile-production-api",
   "version": "1.0.0",
-  "description": "RESTful API for textile production tracking with automated tests",
   "scripts": {
     "setup": "node setup.js",
     "start": "node start.js",
     "stop": "node stop.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "playwright": "npx playwright test",
+    "playwright:headed": "npx playwright test --headed"
   },
-  "license": "MIT",
   "dependencies": {
     "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
   }
 }
