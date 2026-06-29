@@ -77,11 +77,7 @@ const atualizarProducao = async (req, res) => {
     const { id } = req.params;
     const { data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas } = req.body;
 
-    if (!data_producao || !numero_tear || !codigo_produto || !turno || !qualidade || !quilos || !pecas) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios para atualização total." });
-    }
-
-    const producaoAtualizada = await producaoRepository.atualizarProducao(id, {
+    const producaoAtualizada = await producaoService.atualizarProducao(id, {
       data_producao, numero_tear, codigo_produto, turno, qualidade, quilos, pecas
     });
 
@@ -92,6 +88,11 @@ const atualizarProducao = async (req, res) => {
     return res.status(200).json(producaoAtualizada);
   } catch (error) {
     console.error("Erro ao atualizar produção:", error);
+    if (error.message.includes("obrigatório") || error.message.includes("turno") ||
+        error.message.includes("qualidade") || error.message.includes("Quilos") ||
+        error.message.includes("futura")) {
+      return res.status(400).json({ message: error.message });
+    }
     return res.status(500).json({ message: "Erro interno ao atualizar", error: error.message });
   }
 };

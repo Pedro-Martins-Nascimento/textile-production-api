@@ -74,11 +74,26 @@ step('Dependências do Frontend (Playwright...)')
 if (!fs.existsSync(path.resolve('frontend/node_modules'))) {
   info('Instalando dependências do frontend...')
   run('npm install', false, './frontend')
+  if (!fs.existsSync(path.resolve('frontend/node_modules'))) {
+    erro('Falha ao instalar dependências do frontend.')
+    process.exit(1)
+  }
 } else {
   ok('node_modules já instalado em frontend/')
 }
 
-// ── 4. Swagger ─────────────────────────────────────────────────────────────
+// ── 4. Browsers do Playwright ──────────────────────────────────────────────
+step('Browsers do Playwright (Chromium, Firefox, WebKit)')
+info('Instalando browsers... (pode demorar alguns minutos na primeira vez)')
+try {
+  execSync('npx playwright install', { stdio: 'inherit', encoding: 'utf8', cwd: path.resolve('./frontend') })
+  ok('Browsers do Playwright instalados.')
+} catch {
+  warn('Não foi possível instalar os browsers automaticamente.')
+  warn('Instale manualmente: cd frontend && npx playwright install')
+}
+
+// ── 6. Swagger ─────────────────────────────────────────────────────────────
 step('Swagger UI')
 if (fs.existsSync(path.resolve('api/node_modules/swagger-ui-express'))) {
   ok('swagger-ui-express instalado. Docs disponíveis em: http://localhost:3000/docs')
@@ -86,7 +101,7 @@ if (fs.existsSync(path.resolve('api/node_modules/swagger-ui-express'))) {
   erro('swagger-ui-express não encontrado. Verifique se o npm install da API foi bem sucedido.')
 }
 
-// ── 5. Dredd ───────────────────────────────────────────────────────────────
+// ── 7. Dredd ───────────────────────────────────────────────────────────────
 step('Dredd (testes de contrato)')
 if (check('dredd --version')) {
   const v = run('dredd --version')
@@ -102,7 +117,7 @@ if (check('dredd --version')) {
   }
 }
 
-// ── 6. Docker ──────────────────────────────────────────────────────────────
+// ── 8. Docker ──────────────────────────────────────────────────────────────
 step('Docker')
 if (!check('docker --version')) {
   erro('Docker não encontrado. Instale em: https://docs.docker.com/get-docker/')
@@ -118,7 +133,7 @@ if (!check('docker --version')) {
   }
 }
 
-// ── 7. K6 (opcional) ───────────────────────────────────────────────────────
+// ── 9. K6 (opcional) ───────────────────────────────────────────────────────
 step('K6 (testes de carga — opcional)')
 if (check('k6 version')) {
   const v = run('k6 version')

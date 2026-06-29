@@ -6,8 +6,8 @@
     "start": "node start.js",
     "stop": "node stop.js",
     "test": "node test.js",
-    "playwright": "npx playwright test",
-    "playwright:headed": "npx playwright test --headed"
+    "playwright": "npx playwright test --config=frontend/playwright.config.js",
+    "playwright:headed": "npx playwright test --headed --config=frontend/playwright.config.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2"

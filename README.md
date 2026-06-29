@@ -6,40 +6,6 @@ API RESTful com testes automatizados para gestão de registros de produção de 
 
 ---
 
-## 📋 Requisitos do Projeto (Critérios do Professor)
-
-### Endpoints obrigatórios
-
-| # | Endpoint | Status |
-|---|----------|--------|
-| 1 | GET paginado — listagem dos registros | ✅ `GET /api/producoes?page=1&limit=10` |
-| 2 | GET by ID — consulta de um registro específico | ✅ `GET /api/producoes/:id` |
-| 3 | POST — criação de um novo registro | ✅ `POST /api/producoes` |
-| 4 | PUT — atualização de um registro existente | ✅ `PUT /api/producoes/:id` |
-| 5 | DELETE — exclusão de um registro | ✅ `DELETE /api/producoes/:id` |
-
-### Testes obrigatórios
-
-| Tipo | Ferramenta | Status |
-|------|-----------|--------|
-| Teste unitário na API | Jest | ✅ `api/tests/unit/` |
-| Teste de carga | Grafana K6 | ✅ `k6/load-test.js` e `k6/stress-test.js` |
-| Teste no front-end | Playwright | ⏳ `frontend/tests/producao.spec.js` |
-
-### O que precisa ser demonstrado na apresentação
-
-- [ ] A entidade escolhida e o objetivo da aplicação
-- [ ] A arquitetura geral da solução
-- [ ] Os cinco endpoints implementados
-- [ ] A documentação OpenAPI da API (`http://localhost:3000/docs`)
-- [ ] O funcionamento do front-end
-- [ ] Os testes unitários da API
-- [ ] Os testes de carga com Grafana K6
-- [ ] Os testes do front-end com Playwright
-- [ ] Os resultados obtidos na execução dos testes (`npm test`)
-
----
-
 ## 👥 Equipe e Divisão de Responsabilidades
 
 | Pessoa | Responsabilidade |
@@ -219,6 +185,18 @@ O script `test.js` executa todas as suites em sequência, exibindo a saída real
 ```
 
 > ⚠️ Requer que o ambiente esteja no ar (`npm start`) antes de rodar.
+
+### 3.1 Rodar cada suite separadamente
+
+| Suite | Comando | Precisa do ambiente? |
+|---|---|---|
+| Jest unitário | `cd api && npm test -- --testPathPattern=unit` | Não (banco mockado) |
+| Supertest integração | `cd api && npm test -- --testPathPattern=integration` | Sim |
+| Dredd contrato | `cd api && dredd swagger.yaml http://localhost:3000/api --hookfiles=../dredd-hooks.js` | Sim |
+| K6 carga | `k6 run k6/load-test.js` | Sim |
+| K6 estresse | `k6 run k6/stress-test.js` | Sim |
+| Playwright | `cd frontend && npx playwright test` | Sim |
+| Playwright (com browser visível) | `cd frontend && npx playwright test --headed` | Sim |
 
 ### 4. Gerar relatório de cobertura de testes
 
@@ -517,10 +495,10 @@ Valida o endpoint `DELETE /api/producoes/:id`.
 - [x] DELETE /api/producoes/:id com 404
 
 ### Júlia
-- [ ] Tabela renderizando registros da API
-- [ ] Formulário de criação funcionando
-- [ ] Formulário de edição funcionando
-- [ ] Exclusão com confirmação funcionando
+- [x] Tabela renderizando registros da API
+- [x] Formulário de criação funcionando
+- [x] Formulário de edição funcionando
+- [x] Exclusão com confirmação funcionando
 - [ ] Filtro por turno funcionando
 
 ### Mirella
@@ -541,5 +519,5 @@ Valida o endpoint `DELETE /api/producoes/:id`.
 - [x] Thresholds definidos em ambos os scripts
 
 ### Miguel
-- [ ] Fluxos Playwright implementados
-- [ ] `npx playwright test` passa sem erro
+- [x] Fluxos Playwright implementados
+- [x] `npx playwright test` passa sem erro

@@ -149,7 +149,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Producao'
         '400':
-          description: Campos obrigatórios ausentes
+          description: Campos obrigatórios ausentes ou dados inválidos
           content:
             application/json:
               schema:
@@ -245,6 +245,11 @@ components:
           type: integer
           description: Quantidade de peças produzidas
           example: 270
+        created_at:
+          type: string
+          format: date-time
+          description: Data de inserção do registro
+          example: "2026-04-20T06:15:22.000Z"
 
     ProducaoInput:
       type: object

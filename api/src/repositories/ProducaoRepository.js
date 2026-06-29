@@ -30,7 +30,7 @@ const obterProducoesPaginada = async (page, limit, turno) => {
   const resul = await poolPgSQL.query(query, finalValues);
   const numRegistros = await poolPgSQL.query(queryNumRegistros, values);
   
-  const totalRegistros = parseInt(numRegistros.rows[0].count);
+  const totalRegistros = parseInt(numRegistros.rows[0]?.count) || 0;
 
   return {
     dados: resul.rows,
